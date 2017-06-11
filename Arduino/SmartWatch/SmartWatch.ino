@@ -16,6 +16,7 @@ volatile int IBI = 600;             // int that holds the time interval between 
 volatile boolean Pulse = false;     // "True" when User's live heartbeat is detected. "False" when not a "live beat".
 volatile boolean QS = false;        // becomes true when Arduoino finds a beat.
 volatile int IBIdata_length = 0;
+// array to hold last 256 IBI values
 #define IBIlength 256
 volatile int back = 0;
 volatile int IBIdata[IBIlength];
@@ -26,6 +27,8 @@ float LF_HF = 0.0;
 
 /* for record step */
 volatile unsigned int steps = 0;
+int SignalX = 0;
+volatile boolean SignalXisnew = false;
 
 /* for handle message from cellphone */
 char prefix;
@@ -145,5 +148,8 @@ void loop() {
       }
       break;
   }
+  //update accelx
+  SignalX = GY80_getaccelx();
+  SignalXisnew = true;
   delay(100);
 }

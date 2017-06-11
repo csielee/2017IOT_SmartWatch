@@ -1,10 +1,5 @@
 // use PulseSensor in A1 port
 #define pulsePin 1
-// array to hold last 256 IBI values
-//#define IBIlength 256
-//volatile int IBIdata[IBIlength];                    
-//volatile int IBIdata_length = 0;
-//volatile int back = 0;
 volatile unsigned long IBItotal = 0;
 volatile unsigned long sampleCounter = 0;          // used to determine pulse timing
 volatile unsigned long lastBeatTime = 0;           // used to find IBI
@@ -17,6 +12,14 @@ volatile boolean secondBeat = false;      // used to seed rate array so we start
 
 volatile unsigned long realtimecount = 0;
 
+/* for calculate steps from accel */
+volatile int accelP = 150;
+volatile int accelT = 150;
+volatile int accelthresh = 170;
+volatile int accelamp = 0;
+//volatile unsigned long accelsampleCounter = 0;
+//volatile unsigned long aceellastTime = 0;
+volatile boolean first = false;
 
 void PulseSensor_interruptSetup(){  // CHECK OUT THE Timer_Interrupt_Notes TAB FOR MORE ON INTERRUPTS 
   // Initializes Timer2 to throw an interrupt every 2mS.
@@ -33,7 +36,10 @@ void PulseSensor_interruptSetup(){  // CHECK OUT THE Timer_Interrupt_Notes TAB F
 ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts to 124
   //cli();                                      // disable interrupts while we do this
   int Signal = analogRead(pulsePin);              // read the Pulse Sensor
+  //int SignalX = GY80_getaccelx();
+  //int SignalX = 0;
   sampleCounter += 2;                         // keep track of the time in mS with this variable
+  //accelsampleCounter += 2;
   realtimecount += 2;                         // update realtime count
   // one second to update realtime
   if (realtimecount >= 1000) {
@@ -46,6 +52,7 @@ ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts 
     realtimecount -= 1000;
   }
   int N = sampleCounter - lastBeatTime;       // monitor the time since the last beat to avoid noise
+  //int accelN = accelsampleCounter - accellastTime;
 
     //  find the peak and trough of the pulse wave
   if(Signal < thresh && N > (IBI/5)*3){       // avoid dichrotic noise by waiting 3/5 of last IBI
@@ -109,6 +116,29 @@ ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts 
     lastBeatTime = sampleCounter;          // bring the lastBeatTime up to date
     firstBeat = true;                      // set these to avoid noise
     secondBeat = false;                    // when we get the heartbeat back
+  }
+  if (SignalXisnew) {
+    SignalXisnew = false;
+    if (SignalX > accelthresh) {
+      if (SignalX > accelP)
+        accelP = SignalX;
+      // can add steps
+      if (!first) {
+        steps++;
+        first = true;
+      }
+    }
+    if (SignalX < accelthresh) {
+      if (SignalX < accelT)
+        accelT = SignalX;
+      if (first) {
+        first = false;
+        accelamp = accelP - accelT;
+        thresh = accelamp/2 + accelT;
+        accelP = thresh;
+        accelT = thresh;
+      }
+    }
   }
 
   sei();                                   // enable interrupts when youre done!
