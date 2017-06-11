@@ -99,6 +99,10 @@ void loop() {
         LF_HF = ((float)value / 100.0);
         Serial.println("OK");
         break;
+      case 'c':
+        steps = 0;
+        Serial.println("OK");
+        break;
       default:
         Serial.println("NO");
         break;
@@ -125,16 +129,13 @@ void loop() {
       break;
     case HRVDISPLAY:
       {
-      // update BPM when get new IBI
-      if (QS) {
-        String hrv_str = String(HRV,2);
-        String lfhf_str = String(LF_HF,2);
-        String bpm_str = String(BPM,DEC);
-        String t1_str = String("HRV : "+hrv_str);
-        String t2_str = String("LF/HF : "+lfhf_str);
-        String t3_str = String("HeartRate : "+bpm_str);
-        OLED_drawhrv(t1_str.c_str(),t2_str.c_str(),t3_str.c_str());
-      }
+      String hrv_str = String(HRV,2);
+      String lfhf_str = String(LF_HF,2);
+      String bpm_str = String(BPM,DEC);
+      String t1_str = String("HRV : "+hrv_str);
+      String t2_str = String("LF/HF : "+lfhf_str);
+      String t3_str = String("HeartRate : "+bpm_str);
+      OLED_drawhrv(t1_str.c_str(),t2_str.c_str(),t3_str.c_str());
       }
       break;
     case STEPDISPLAY:
