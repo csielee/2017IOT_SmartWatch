@@ -1,10 +1,10 @@
 // use PulseSensor in A1 port
 #define pulsePin 1
 // array to hold last 256 IBI values
-#define IBIlength 256
-volatile int IBIdata[IBIlength];                    
-volatile int IBIdata_length = 0;
-volatile int back = 0;
+//#define IBIlength 256
+//volatile int IBIdata[IBIlength];                    
+//volatile int IBIdata_length = 0;
+//volatile int back = 0;
 volatile unsigned long IBItotal = 0;
 volatile unsigned long sampleCounter = 0;          // used to determine pulse timing
 volatile unsigned long lastBeatTime = 0;           // used to find IBI
@@ -79,7 +79,7 @@ ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts 
 
       // add new IBI in IBIdata queue
       int popIBI = 0;
-      if (IBIdata_length < 512) {
+      if (IBIdata_length < IBIlength) {
         IBIdata_length++;
       }
       else {

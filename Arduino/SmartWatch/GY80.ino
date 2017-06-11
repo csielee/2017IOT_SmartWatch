@@ -71,3 +71,11 @@ float GY80_getaltitude() {
   altitude = bmp085.getAltitude(pressure);
   return altitude;
 }
+
+int16_t GY80_getaccelx() {
+  int16_t accelx = accel.getAccelerationX();
+  if (accelx < 30 && accelx > -30)
+    accelx = 0;
+  return accelx;
+}
+

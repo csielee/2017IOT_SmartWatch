@@ -32,7 +32,7 @@ void OLED_drawtime(const char *hourminute,const char *second) {
   } while( u8g.nextPage() );
 }
 
-void OLED_drawhrv(const char *bpm) {
+void OLED_drawhrv(const char *hrv,const char *lfhf,const char *bpm) {
   // draw loop
   u8g.firstPage();
   do {
@@ -41,13 +41,14 @@ void OLED_drawhrv(const char *bpm) {
   // set the draw inital point at left top
   u8g.setFontPosTop();
   // get the string width
-  int w = u8g.getStrWidth(bpm);
-  // draw bpm in center
-  u8g.drawStr((u8g.getWidth() - w)/2, u8g.getHeight()/2 - 5,bpm);
+  // draw hrv lfhf bpm in center
+  u8g.drawStr((u8g.getWidth() - u8g.getStrWidth(hrv))/2, u8g.getHeight()/2 - 18,hrv);
+  u8g.drawStr((u8g.getWidth() - u8g.getStrWidth(lfhf))/2, u8g.getHeight()/2 - 6,lfhf);
+  u8g.drawStr((u8g.getWidth() - u8g.getStrWidth(bpm))/2, u8g.getHeight()/2 + 7,bpm);
   } while( u8g.nextPage() );
 }
 
-void OLED_drawstep(const char *altitude) {
+void OLED_drawstep(const char *steps_string,const char *altitude) {
   // draw loop
   u8g.firstPage();
   do {
@@ -55,10 +56,9 @@ void OLED_drawstep(const char *altitude) {
   u8g.setFont(u8g_font_fur11);
   // set the draw inital point at left top
   u8g.setFontPosTop();
-  // get the string width
-  int w = u8g.getStrWidth(altitude);
-  // draw altitude in center
-  u8g.drawStr((u8g.getWidth() - w)/2, u8g.getHeight()/2 - 5,altitude);
+  // draw steps and altitude in center
+  u8g.drawStr((u8g.getWidth() - u8g.getStrWidth(steps_string))/2, u8g.getHeight()/2 - 12,steps_string);
+  u8g.drawStr((u8g.getWidth() - u8g.getStrWidth(altitude))/2, u8g.getHeight()/2 + 1,altitude);  
   } while( u8g.nextPage() );
 }
 
