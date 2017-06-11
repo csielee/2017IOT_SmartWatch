@@ -31,7 +31,7 @@ void PulseSensor_interruptSetup(){  // CHECK OUT THE Timer_Interrupt_Notes TAB F
 // THIS IS THE TIMER 2 INTERRUPT SERVICE ROUTINE.
 // Timer 2 makes sure that we take a reading every 2 miliseconds
 ISR(TIMER2_COMPA_vect){                         // triggered when Timer2 counts to 124
-  cli();                                      // disable interrupts while we do this
+  //cli();                                      // disable interrupts while we do this
   int Signal = analogRead(pulsePin);              // read the Pulse Sensor
   sampleCounter += 2;                         // keep track of the time in mS with this variable
   realtimecount += 2;                         // update realtime count

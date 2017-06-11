@@ -19,6 +19,8 @@ ADXL345 accel;
 // specific I2C address may be passed here
 L3G4200D gyro;
 
+#define gyro_interruptpin 2
+
 // class default I2C address is 0x77
 // specific I2C addresses may be passed as a parameter here
 // (though the BMP085 supports only one address)
@@ -30,12 +32,25 @@ void GY80_init() {
 
     // initialize device
     accel.initialize();
+    pinMode(gyro_interruptpin, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(gyro_interruptpin), changestate, RISING);
     gyro.initialize();
+    // set gyro interrupt setting
+    gyro.setYHighInterruptEnabled(true);
+    gyro.setYHighThreshold((uint8_t)64);
+    gyro.setDuration((uint8_t)8);
+    gyro.setWaitEnabled(true);
+    gyro.setINT1InterruptEnabled(true);
+    gyro.interruptActiveINT1Config();
     bmp085.initialize();
 
-    // verify connection
-    
+    // verify connection    
 }
+
+void changestate() {
+  currstate = (currstate+1) % STATES;
+}
+
 float GY80_getaltitude() {
   float temperature;
   float pressure;
