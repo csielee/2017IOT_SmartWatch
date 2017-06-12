@@ -33,6 +33,9 @@ volatile boolean SignalXisnew = false;
 /* for handle message from cellphone */
 char prefix;
 char ch;
+bool sendIBIdata = false;
+int currsendIndex;
+int currback;
 
 void setup() {
   OLED_init();
@@ -50,7 +53,7 @@ void setup() {
 
 void loop() {
   // check update info from cellphone
-  if (Serial.available()) {
+  if (Serial.available() && !sendIBIdata) {
     prefix = Serial.read();
     int value = 0;
     while (true) {
@@ -81,13 +84,16 @@ void loop() {
         if (IBIdata_length < IBIlength)
           Serial.println("NO");
         else {
-          if (value >= IBIlength)
+          /*if (value >= IBIlength)
             Serial.println("OK");
           else {
             int i = back + value;
             i %= IBIlength;
             Serial.println(IBIdata[i]);
-          }
+          }*/
+          sendIBIdata = true;
+          currsendIndex = 0;
+          currback = back;
         }
         break;
       case 'r':
@@ -106,6 +112,17 @@ void loop() {
         Serial.println("NO");
         break;
     }
+  }
+  // send IBIdata per loop
+  if (sendIBIdata) {
+    if (currsendIndex >= IBIlength) {
+      sendIBIdata = false;
+      Serial.println("OK");
+    }
+    int i = currback + currsendIndex;
+    i %= IBIlength;
+    Serial.println(IBIdata[i]);
+    currsendIndex++;
   }
   // run display mode by 'currstate'
   switch(currstate) {
