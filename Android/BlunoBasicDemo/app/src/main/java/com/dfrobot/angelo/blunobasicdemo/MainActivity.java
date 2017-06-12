@@ -22,8 +22,14 @@ public class MainActivity  extends BlunoLibrary {
 	private EditText serialSendText;
 	private TextView serialReceivedText;
 	private String command;
-	//private int IBIdata_count;
-	private Vector IBIdata = new Vector(256);
+	private int IBIdata_length;
+	private int[] IBIdata;
+	private boolean IBIdataReady = false;
+	private boolean currIBIdataReady = false;
+	private boolean HRVLFHFReady = false;
+	private double HRV = 0.0;
+	private double LFHF = 0.0;
+	//private Vector IBIdata = new Vector(256);
 
 
 	@Override
@@ -83,9 +89,13 @@ public class MainActivity  extends BlunoLibrary {
 			public void onClick(View view) {
 				command = "CalHRV";
 				// get IBI data from SmartWatch
-				// "g;" can get all IBI data , if not enough will get "NO"
-				IBIdata.clear();
+				// "g;" can get all IBI data, if not enough will get "NO", if get enough will get "OK"
+				IBIdata_length = 0;
+				//IBIdataReady = false;
+				//HRVLFHFReady = false;
+				buttonCalHRV.setText("Get IBIdata from SmartWatch");
 				serialSend("g;");
+
 			}
 		});
 
@@ -102,6 +112,8 @@ public class MainActivity  extends BlunoLibrary {
 		buttonSettime.setEnabled(false);
 		buttonCalHRV.setEnabled(false);
 		buttonClearsteps.setEnabled(false);
+		IBIdata = new int[530];
+		IBIdata_length = 0;
 	}
 
 	protected void onResume(){
@@ -152,6 +164,7 @@ public class MainActivity  extends BlunoLibrary {
 			buttonSettime.setEnabled(false);
 			buttonCalHRV.setEnabled(false);
 			buttonClearsteps.setEnabled(false);
+			serialReceivedText.setText("");
 			break;
 		case isScanning:
 			buttonScan.setText("Scanning");
@@ -174,40 +187,90 @@ public class MainActivity  extends BlunoLibrary {
 			serialReceivedText.setText("Settime : "+theString);
 		}
 		if (command == "CalHRV") {
-			serialReceivedText.setText("CalHRV : --" + theString);
-			String str = theString.substring(0,theString.length()-1);
-			if (str == "NO")
-				serialReceivedText.setText("CalHRV : IBIdata is not enough\n");
+			theString = theString.substring(0,theString.length()-2);
+			serialReceivedText.setText("CalHRV : [" + theString +"]\n");
+			if (theString.compareTo("NO") == 0) {
+				serialReceivedText.append("CalHRV : IBIdata is not enough\n");
+				buttonCalHRV.setText("Cal HRV and LF/HF");
+			}
 			else {
-				if (str == "OK") {
-					if (IBIdata.size()!=0) {
-						serialReceivedText.setText("CalHRV : start cal\n");
+				if (theString.compareTo("OK") == 0) {
+					buttonCalHRV.setText("Waiting for calculate HRV LF/HF");
+					IBIdataReady = true;
+					if (IBIdata_length!=0) {
+						serialReceivedText.append("CalHRV : start cal\n");
 						command = "";
 						// use SDNN to cal hrv
 						int total = 0;
 						int pow_total = 0;
 						int tmp;
-						for (int i = 0; i < IBIdata.size(); i++) {
-							tmp = (int) IBIdata.get(i);
+						for (int i = 0; i < IBIdata_length; i++) {
+							tmp = IBIdata[i];
 							total += tmp;
 							pow_total += tmp * tmp;
 						}
-						double average = (double) total / (double) IBIdata.size();
+						double average = (double) total / (double) IBIdata_length;
 						average = average * average;
-						double hrv = Math.sqrt(((double) pow_total / (double) IBIdata.size()) - average);
-						tmp = (int) (hrv * 100);
-						String hrv_str = String.valueOf(tmp);
-						// send HRV to SmartWatch
-						serialSend("r" + hrv_str + ";");
-						// use fft to cal lf/hf
+						HRV = Math.sqrt(((double) pow_total / (double) IBIdata_length) - average);
 
-						serialReceivedText.setText("CalHRV : end cal\n");
+						// use fft with IBIdata
+						// real number
+						double[] yr = new double[IBIdata_length+1];
+						// imaginary number
+						double[] yi = new double[IBIdata_length+1];
+						for (int i=0;i<IBIdata_length;i++) {
+							yr[i] = 0.0;
+							yi[i] = 0.0;
+							for (int j=0;j<IBIdata_length;j++) {
+								yr[i] += ((double)IBIdata[j])*Math.cos(2*Math.PI*i*j/((double)IBIdata_length));
+								yi[i] += (-(double)IBIdata[j])*Math.sin(2*Math.PI*i*j/((double)IBIdata_length));
+							}
+						}
+						// cal LF HF by yr yi
+						double hzstep = (1.0) / IBIdata_length;
+						//  0.04 hz < LF < 0.15 hz
+						double LF = 0.0;
+						// 0.15 hz < HF < 0.4 hz
+						double HF = 0.0;
+						double currhz = 0.0;
+						for (int i=0;i<IBIdata_length/2;i++) {
+							currhz = i*hzstep;
+							if (0.04 <= currhz && currhz <= 0.15) {
+								LF += Math.sqrt(yr[i]*yr[i] + yi[i]*yi[i]);
+							}
+							if (0.15 < currhz && currhz <= 0.4) {
+								HF += Math.sqrt(yr[i]*yr[i] + yi[i]*yi[i]);
+							}
+							if (currhz > 0.4)
+								break;
+						}
+						LFHF = LF / HF;
+
+						// send HRV and LF/HF
+						serialSend("r" + String.valueOf((int)(HRV*100)) + ";");
+						serialSend("l" + String.valueOf((int)(LFHF*100)) + ";");
+						serialReceivedText.append("CalHRV : end cal\nHRV : " + String.valueOf(HRV) + "\nLF/HF : " + String.valueOf(LFHF));
+						HRVLFHFReady = true;
 					} else {
-						serialReceivedText.setText("CalHRV : OK but no data\n");
+						//serialReceivedText.setText("CalHRV : OK but no data\n");
+						HRV = 0.0;
+						LFHF = 0.0;
+						HRVLFHFReady = true;
 					}
+					buttonCalHRV.setText("Cal HRV and LF/HF");
 				} else {
 					// get IBIdata by theString
-					IBIdata.add(Integer.valueOf(str));
+					try {
+						IBIdata[IBIdata_length] = Integer.parseInt(theString);
+						IBIdata_length++;
+						serialReceivedText.append("success!\n");
+					} catch (NumberFormatException e) {
+						IBIdata[IBIdata_length] = 0;
+						IBIdata_length++;
+						serialReceivedText.append("fail!\n");
+					}
+
+					//currIBIdataReady = true;
 				}
 			}
 		}
