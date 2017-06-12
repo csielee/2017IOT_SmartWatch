@@ -119,10 +119,12 @@ void loop() {
       sendIBIdata = false;
       Serial.println("OK");
     }
-    int i = currback + currsendIndex;
-    i %= IBIlength;
-    Serial.println(IBIdata[i]);
-    currsendIndex++;
+    else {
+      int i = currback + currsendIndex;
+      i %= IBIlength;
+      Serial.println(IBIdata[i]);
+      currsendIndex++;
+    }
   }
   // run display mode by 'currstate'
   switch(currstate) {
