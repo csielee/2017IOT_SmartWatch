@@ -81,14 +81,13 @@ void loop() {
         if (IBIdata_length < IBIlength)
           Serial.println("NO");
         else {
-          {
-            int i = back,j = 0;
-            for (;j<IBIlength;i++,j++) {
-              i %= IBIlength;
-              Serial.println(IBIdata[i]); 
-            }
+          if (value >= IBIlength)
+            Serial.println("OK");
+          else {
+            int i = back + value;
+            i %= IBIlength;
+            Serial.println(IBIdata[i]);
           }
-          Serial.println("OK");
         }
         break;
       case 'r':
